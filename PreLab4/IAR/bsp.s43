@@ -1,0 +1,31 @@
+#include  "bsp.h"
+
+          MODULE  BSP
+          PUBLIC  GPIOconfig
+          
+          RSEG    CODE
+;-----------------------------------------------------------------------------
+;                       GPIO congiguration
+;-----------------------------------------------------------------------------
+          
+GPIOconfig
+          ; LEDs Setup
+          bic.b #0xFF, LEDsArrPortSel  ;I/O
+          bis.b #0xFF, LEDsArrPortDir  ;output dir
+          bic.b #0xFF, LEDsArrPortOut ;clear LEDs
+          
+          ;PushButtons Setup
+          bic.b #0x8F, PBsArrPortSel   ;I/O for P2.(0-3) & P2.7
+          bic.b #0x0F, PBsArrPortDir    ;input dir for PB
+          bis.b #0x03, PBsArrIntEdgeSel ;pull-up
+          bic.b #0x0C, PBsArrIntEdgeSel ;pull-down
+          bis.b #0x07, PBsArrIntEn       ;3 buttons
+          bic.b #0x0F, PBsArrIntPend   ;clear pending interrupts
+          ret
+          
+          ;p2.7 for chanel 1
+          bis.b #0x80, PBsArrPortDir    ;set P2.7 output for pwm 
+          
+;-----------------------------------------------------------------------------
+          ENDMOD
+          END         

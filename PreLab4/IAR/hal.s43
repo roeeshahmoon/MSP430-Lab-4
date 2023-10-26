@@ -1,0 +1,49 @@
+#include  "bsp.h"
+          MODULE HAL
+          PUBLIC PORT2_ISR, delay, SystemConfig
+          EXTERN GPIOconfig, state
+         
+          RSEG   CODE
+;-----------------------------------------------------------------------------
+;                       
+;-----------------------------------------------------------------------------
+SystemConfig    CALL #GPIOconfig ;define the GPIO
+                ret 
+;-----------------------------------------------------------------------------
+;                       
+;-----------------------------------------------------------------------------
+PORT2_ISR     push  debounceVal
+              CALL  #delay
+              bit.b #0x01, PBsArrIntPend     ;check if flag up
+              jnz   P2_0
+              bit.b #0x02, PBsArrIntPend     
+              jnz   P2_1
+              bit.b #0x04, PBsArrIntPend
+              jnz   P2_2
+              mov   #0, state
+              reti ; interupt happened from another source
+
+
+P2_0          mov #1, state
+              jmp ExitLMP0
+P2_1          mov #2, state
+              jmp ExitLMP0
+P2_2          mov #3, state
+              jmp ExitLMP0
+
+ExitLMP0      bic #CPUOFF, 0(sp)   ;get out from sleep
+              bic.b #0x07, PBsArrIntPend
+              reti
+              
+;-----------------------------------------------------------------------------
+;                       
+;-----------------------------------------------------------------------------
+delay     pop R4 ; PC+4
+          pop R5 ; debounce value
+L         dec.w R5
+          JNZ L
+          push R4
+          ret
+;-----------------------------------------------------------------------------
+          ENDMOD
+          END
