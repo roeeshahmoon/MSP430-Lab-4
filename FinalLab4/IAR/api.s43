@@ -1,0 +1,86 @@
+#include  "bsp.h"
+           MODULE API
+           PUBLIC ClearLeds, DecLeds, LeftLeds, PWM ,PrintStr
+           EXTERN FirstVal, SecondVal, state, Delay100us, DelayHalfSec, 
+           EXTERN Delay_ms, Cname, Size , Delay250ms,DelayXms
+           RSEG   CODE
+;-----------------------------------------------------------------------------
+;                       
+;-----------------------------------------------------------------------------
+ClearLeds       mov.b #0, LEDsArrPortOut ;reset the leds  
+                ret
+
+DecLeds         CLR     R4
+SubLoop         MOV.B   FirstVal, LEDsArrPortOut ;start the loop
+                CALL    #DelayHalfSec
+                SUB.B   #1, FirstVal
+                INC.B   R4
+                CMP     #20, R4 ;20 times to take 10s at all
+                JZ      OffState1
+                JMP     SubLoop
+OffState1       ret
+
+
+;-----------------------------------------------------------------------------
+
+LeftLeds        CLR     R5
+LoopLeft        MOV.B   SecondVal, LEDsArrPortOut
+                CALL    #DelayHalfSec                
+                RLA.B   SecondVal
+                JZ      mov1
+                INC.B   R5                  
+                CMP.B   #10, R5  ;10 times to take 5s at all
+                JZ      OffState2
+                JMP     LoopLeft
+OffState2       ret
+
+mov1            MOV     #1, SecondVal
+                JMP     LoopLeft
+
+;-----------------------------------------------------------------------------
+PWM           
+               clr.b   &P2OUT
+               DINT
+s3             bis.b   #0x80,&P2OUT ;move 1 to output 
+               mov.b   #105,R5
+Lwait1         dec.w   R5
+               jnz     Lwait1
+               
+               bic.b   #0x80,&P2OUT ;move 0 to output  
+               mov.b   #35,R5
+Lwait0         dec.w   R5
+               jnz     Lwait0
+               EINT
+               cmp.b  #3,state
+               jz    s3
+               
+               
+OffState3      ret
+
+;-----------------------------------------------------------------------------
+ 
+PrintStr       clr.b   &P2OUT
+               DINT
+ 
+s4             mov.b @R7,LEDsArrPortOut  ;show number id on led
+               add   #1,R7
+               call #DelayXms
+               dec.w R8                          ;counter for IDs
+               jnz s4
+           
+               mov #13,R8
+               sub #13,R7 ;return to adress
+               
+               EINT
+               cmp.b  #4,state
+               jz    s4
+
+OffState4      ret
+ 
+ 
+ 
+ 
+;-----------------------------------------------------------------------------
+ 
+          ENDMOD
+          END

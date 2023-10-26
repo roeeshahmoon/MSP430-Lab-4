@@ -1,0 +1,72 @@
+#include  "bsp.h"
+          NAME  MAIN
+          PUBLIC  MAIN, state, FirstVal, SecondVal, Cname,Size
+          EXTERN  PORT2_ISR, SystemConfig, ClearLeds, DecLeds, LeftLeds
+          EXTERN  Delay100us, DelayHalfSec, PWM, Delay_ms ,Delay250ms,PrintStr,DelayXms
+;-----------------------------------------------------------------------------
+          ORG 0x200    ;Begin of RAM seg
+;-----------------------------------------------------------------------------
+state      DW 0
+FirstVal   DW 0xFF
+SecondVal  DW 1
+Cname      DB 'Roee Shahmoon'
+Size       DB 13
+;-----------------------------------------------------------------------------
+          RSEG  CSTACK
+          RSEG  CODE
+;-----------------------------------------------------------------------------
+          ORG 0x0C00  ;Program Reset           
+;-----------------------------------------------------------------------------
+MAIN      mov.w #SFE(CSTACK), SP
+StopDWT   mov.w #WDTPW+WDTHOLD, &WDTCTL ;Stop WDT
+          call #SystemConfig ; to check
+          
+
+;-----------------------------------------------------------------------------
+;                                  Val & Reg             
+;-----------------------------------------------------------------------------          
+
+reg       mov #Cname, R7
+          mov #13, R8 
+          mov #250,R6
+;-----------------------------------------------------------------------------
+;                                  FSM_loop             
+;-----------------------------------------------------------------------------
+state0    cmp.b #0, state
+          jnz state1
+          //dint         ;GIO=0 
+          call #ClearLeds ;turn off the leds
+          bis.w #CPUOFF+GIE, SR ;go to sleep LMP0
+
+state1    cmp.b #1, state ;check if button 1 is on
+          jnz state2 
+          dint         ;GIO=0 
+          call #DecLeds ;call the function DecLeds
+          eint         ;GIO=1 
+          mov #0, state ; reset the state
+
+state2    cmp.b #2, state ;check if button 2 is on
+          jnz state3
+          dint         ;GIO=0 
+          call #LeftLeds ;call the function
+          eint         ;GIO=1 
+          mov #0, state ; reset the state
+          
+state3    cmp.b #3, state  ;check if button 3 is on
+          jnz state4 
+          call #PWM         
+          //mov #0, state ; reset the state
+
+state4    cmp.b #4, state ;check if button 4 is on
+          jnz state0
+          call #PrintStr ;call the function 
+          //mov #0, state ; reset the state
+
+;-----------------------------------------------------------------------------
+          COMMON  INTVEC        
+;-----------------------------------------------------------------------------
+          ORG     PORT2_VECTOR
+          DW      PORT2_ISR
+          ORG     RESET_VECTOR
+          DW      MAIN
+          END

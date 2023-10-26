@@ -1,0 +1,105 @@
+#include  "bsp.h"
+          MODULE HAL
+          PUBLIC PORT2_ISR, delay, SystemConfig ,Delay100us, DelayHalfSec, Delay_ms,DelayXms
+          PUBLIC Delay250ms Delay1sec
+          EXTERN GPIOconfig, state,Cname,Size
+         
+          RSEG   CODE
+;-----------------------------------------------------------------------------
+;                       
+;-----------------------------------------------------------------------------
+SystemConfig    CALL #GPIOconfig ;define the GPIO
+                ret 
+;-----------------------------------------------------------------------------
+;                       
+;-----------------------------------------------------------------------------
+PORT2_ISR     push  debounceVal
+              CALL  #delay
+              
+              bit.b #0x01, PBsArrIntPend     ;check if flag up
+              jnz   P2_0
+              bit.b #0x02, PBsArrIntPend     
+              jnz   P2_1
+              bit.b #0x04, PBsArrIntPend
+              jnz   P2_2
+              
+              bit.b #0x08, PBsArrIntPend
+              jnz   P2_3
+              
+              mov   #0, state
+              reti ; interupt happened from another source
+
+P2_0          mov #1, state
+              jmp ExitLMP0
+P2_1          mov #2, state
+              jmp ExitLMP0
+P2_2          mov #3, state
+              jmp ExitLMP0
+P2_3          mov #4, state
+              jmp ExitLMP0                      
+             
+
+ExitLMP0      bic #CPUOFF, 0(sp)   ;get out from sleep
+              bic.b #0x07, PBsArrIntPend
+              reti
+              
+              
+              
+;-----------------------------------------------------------------------------
+int_str   
+          
+;-----------------------------------------------------------------------------
+delay     pop R4 ; PC+4
+          pop R5 ; debounce value
+L         dec.w R5
+          JNZ L
+          push R4
+          ret
+;-----------------------------------------------------------------------------
+
+Delay100us      mov.w   #33,R15              
+L1              dec.w   R15                     
+                jnz     L1                                    
+                ret
+;-----------------------------------------------------------------------------            
+DelayHalfSec    mov.w   #4808,R13              
+L2              call    #Delay100us
+                dec.w   R13                     
+                jnz     L2                                    
+                ret
+
+;---------------------------------------------------------------------------
+Delay_ms        mov.w   #2404,R13              
+L5              call    #Delay100us
+                dec.w   R13                     
+                jnz     L5                                    
+                ret
+                
+;-----------------------------------------------------------------------------
+
+    
+Delay1sec       mov.w   #10,R13              
+                call    #Delay100us
+Lsec            dec.w   R13                     
+                jnz     Lsec                                  
+                ret    
+    
+    
+;-----------------------------------------------------------------------------
+    
+Delay250ms      mov.w   #250,R13              
+                call    #Delay_ms
+L25ms           dec.w   R13                     
+                jnz     L25ms                                    
+                ret    
+;-----------------------------------------------------------------------------
+                
+DelayXms        mov.w   R6,R13              
+                call    #Delay_ms
+LXms            dec.w   R13                     
+                jnz     LXms                                    
+                ret    
+;-----------------------------------------------------------------------------
+    
+          ENDMOD
+          END
